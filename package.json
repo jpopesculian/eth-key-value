@@ -1,16 +1,17 @@
 {
-  "name": "smart-contracts",
+  "name": "eth-key-value-contracts",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build:dev": "webpack --config webpack.config.js --watch",
-    "build": "webpack --config webpack.config.js"
+    "build:dev": "webpack --config webpack.config.js --watch --mode development",
+    "build": "webpack --config webpack.config.js --mode production"
   },
   "devDependencies": {
     "eslint-config-prettier": "^3.0.1",
     "json-loader": "^0.5.7",
     "truffle-solidity-loader": "^0.1.0",
     "webpack": "^4.19.0"
-  }
+  },
+  "dependencies": {}
 }
