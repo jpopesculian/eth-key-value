@@ -1,5 +1,5 @@
-const HelloWorld = artifacts.require('./HelloWorld.sol')
+const KeyValueStore = artifacts.require('./KeyValueStore.sol')
 
 module.exports = deployer => {
-  deployer.deploy(HelloWorld)
+  deployer.deploy(KeyValueStore)
 }

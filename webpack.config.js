@@ -3,7 +3,7 @@ const path = require('path')
 
 module.exports = {
   entry: {
-    main: ['./contracts/HelloWorld.sol']
+    main: ['./contracts/KeyValueStore.sol']
   },
   module: {
     rules: [

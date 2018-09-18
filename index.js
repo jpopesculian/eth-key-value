@@ -1,3 +1,3 @@
 module.exports = {
-  HelloWorld: require('./build/contracts/HelloWorld.json')
+  KeyValueStore: require('./build/contracts/KeyValueStore.json')
 }
