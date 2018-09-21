@@ -17,7 +17,7 @@ contract KeyValueStore {
     mapping (bytes32 => address[]) public members;
 
     function create(address account, bytes32 accessor, bytes encryptedData, bytes encryptedKey) public {
-        // if (created[accessor]) return; TODO change to require()
+        require(!created[accessor]);
         _create(account, accessor, encryptedData, encryptedKey);
     }
 
@@ -54,26 +54,43 @@ contract KeyValueStore {
 
     function removeOwner(bytes32 accessor, address account) public returns(uint8) {
         require(msg.sender != account);
+        require(isOwner(accessor, account));
         require(isOwner(accessor, msg.sender));
         return _removeOwner(accessor, account);
     }
 
     function removeAdmin(bytes32 accessor, address account) public returns(uint8) {
         require(msg.sender != account);
+        require(isAdmin(accessor, account));
         require(isOwner(accessor, msg.sender));
         return _removeAdmin(accessor, account);
     }
 
     function revokeWriteAccess(bytes32 accessor, address account) public returns(uint8) {
         require(msg.sender != account);
-        require(isAdmin(accessor, msg.sender));
+        require(canWrite(accessor, account));
+        if (isAdmin(accessor, account) || isOwner(accessor, account)) {
+            require(isOwner(accessor, msg.sender));
+        } else {
+            require(isAdmin(accessor, msg.sender));
+        }
         return _revokeWriteAccess(accessor, account);
     }
 
-    function revokeReadAccess(bytes32 accessor, address account) public returns(uint8) {
+    function revokeReadAccess(
+        bytes32 accessor,
+        address account,
+        bytes encryptedData,
+        bytes encryptedKey
+    ) public returns(uint8) {
         require(msg.sender != account);
-        require(isAdmin(accessor, msg.sender));
-        return _revokeReadAccess(accessor, account);
+        require(canRead(accessor, account));
+        if (isAdmin(accessor, account) || isOwner(accessor, account)) {
+            require(isOwner(accessor, msg.sender));
+        } else {
+            require(isAdmin(accessor, msg.sender));
+        }
+        return _revokeReadAccess(accessor, account, encryptedData, encryptedKey);
     }
 
     function setRegistration(string publicKey) public {
@@ -179,10 +196,14 @@ contract KeyValueStore {
         return _removeAdmin(accessor, account);
     }
 
-    function _revokeReadAccess(bytes32 accessor, address account) private returns(uint8) {
-        if (readers[accessor][account] < 1) {
-            return readers[accessor][account];
-        }
+    function _revokeReadAccess(
+        bytes32 accessor,
+        address account,
+        bytes encryptedData,
+        bytes encryptedKey
+    ) private returns(uint8) {
+        _write(accessor, encryptedData);
+        _issueEncryptedKey(accessor, msg.sender, encryptedKey);
         _removeMember(accessor, account);
         readers[accessor][account] = 0;
         return _revokeWriteAccess(accessor, account);
