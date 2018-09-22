@@ -98,6 +98,29 @@ contract KeyValueStore {
         registered[msg.sender] = true;
     }
 
+    function unRegister() public {
+        delete registration[msg.sender];
+        registered[msg.sender] = false;
+    }
+
+    function remove(bytes32 accessor) public {
+        require(isOwner(accessor, msg.sender));
+
+        delete data[accessor];
+        created[accessor] = false;
+
+        for (uint i = 0; i < members[accessor].length; i++) {
+            address member = members[accessor][i];
+
+            delete keys[accessor][member];
+            delete owners[accessor][member];
+            delete admins[accessor][member];
+            delete writers[accessor][member];
+            delete readers[accessor][member];
+        }
+        delete members[accessor];
+    }
+
     // === GETTERS ===
     //
     function isOwner(bytes32 accessor, address account) public view returns(bool) {
