@@ -1,0 +1,97 @@
+{
+  "contractName": "MemberListCapable",
+  "abi": [],
+  "bytecode": "0x6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00a165627a7a7230582070461d516a429786e1681ac12deed62a2acdb85198ca3aa0cfa7a2e82e9cc0940029",
+  "deployedBytecode": "0x6080604052600080fd00a165627a7a7230582070461d516a429786e1681ac12deed62a2acdb85198ca3aa0cfa7a2e82e9cc0940029",
+  "sourceMap": "27:815:0:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;27:815:0;;;;;;;",
+  "deployedSourceMap": "27:815:0:-;;;;;",
+  "source": "pragma solidity ^0.4.24;\n\n\ncontract MemberListCapable {\n    // function addAddress(\n    //     mapping(address => uint8) ids,\n    //     address[] addresses,\n    //     address account\n    // ) internal returns(uint8) {\n    //     return ids[account] = uint8(addresses.push(account));\n    // }\n\n    // function removeAddress(\n    //     mapping(address => uint8) ids,\n    //     address[] addresses,\n    //     address account\n    // ) internal returns(uint8) {\n    //     uint8 id = ids[account];\n    //     uint8 index = id - 1;\n    //     if (index >= addresses.length) return;\n\n    //     delete addresses[index];\n\n    //     if (index > 0) {\n    //         address lastAccount = addresses[addresses.length - 1];\n    //         addresses[index] = lastAccount;\n    //     }\n\n    //     addresses.length--;\n\n    //     return id;\n    // }\n}\n",
+  "sourcePath": "/home/julian/Development/eth-key-value/smart-contracts/contracts/ArrayUtils.sol",
+  "ast": {
+    "absolutePath": "/home/julian/Development/eth-key-value/smart-contracts/contracts/ArrayUtils.sol",
+    "exportedSymbols": {
+      "MemberListCapable": [
+        2
+      ]
+    },
+    "id": 3,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1,
+        "literals": [
+          "solidity",
+          "^",
+          "0.4",
+          ".24"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:0"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 2,
+        "linearizedBaseContracts": [
+          2
+        ],
+        "name": "MemberListCapable",
+        "nodeType": "ContractDefinition",
+        "nodes": [],
+        "scope": 3,
+        "src": "27:815:0"
+      }
+    ],
+    "src": "0:843:0"
+  },
+  "legacyAST": {
+    "absolutePath": "/home/julian/Development/eth-key-value/smart-contracts/contracts/ArrayUtils.sol",
+    "exportedSymbols": {
+      "MemberListCapable": [
+        2
+      ]
+    },
+    "id": 3,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1,
+        "literals": [
+          "solidity",
+          "^",
+          "0.4",
+          ".24"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:24:0"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 2,
+        "linearizedBaseContracts": [
+          2
+        ],
+        "name": "MemberListCapable",
+        "nodeType": "ContractDefinition",
+        "nodes": [],
+        "scope": 3,
+        "src": "27:815:0"
+      }
+    ],
+    "src": "0:843:0"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.24+commit.e67f0147.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "2.0.1",
+  "updatedAt": "2018-11-05T12:06:52.318Z"
+}

@@ -1,24 +1,41 @@
 pragma solidity ^0.4.24;
 
+// import "./ArrayUtils.sol";
+//
 
 contract KeyValueStore {
     mapping (bytes32 => bytes) public data;
-    mapping (bytes32 => bool) public created;
+    mapping (bytes32 => bool) public claimed;
 
     mapping (bytes32 => mapping (address => bytes)) public keys;
 
     mapping (address => string) public registration;
     mapping (address => bool) public registered;
 
-    mapping (bytes32 => mapping (address => uint8)) public owners;
-    mapping (bytes32 => mapping (address => uint8)) public admins;
-    mapping (bytes32 => mapping (address => uint8)) public writers;
-    mapping (bytes32 => mapping (address => uint8)) public readers;
-    mapping (bytes32 => address[]) public members;
+    struct MemberList {
+        mapping (address => uint8) owners;
+        mapping (address => uint8) admins;
+        mapping (address => uint8) writers;
+        mapping (address => uint8) readers;
+        address[] accounts;
+    }
+
+    mapping (bytes32 => MemberList) internal members;
+    //
+    // mapping (bytes32 => mapping (address => uint8)) public owners;
+    // mapping (bytes32 => mapping (address => uint8)) public admins;
+    // mapping (bytes32 => mapping (address => uint8)) public writers;
+    // mapping (bytes32 => mapping (address => uint8)) public readers;
+    // mapping (bytes32 => address[]) public members;
 
     function create(address account, bytes32 accessor, bytes encryptedData, bytes encryptedKey) public {
-        require(!created[accessor]);
+        require(!claimed[accessor]);
         _create(account, accessor, encryptedData, encryptedKey);
+    }
+
+    function claim(address account, bytes32 accessor) public {
+        require(!claimed[accessor]);
+        _claim(account, accessor);
     }
 
     function write(bytes32 accessor, bytes encryptedData) public {
@@ -26,24 +43,28 @@ contract KeyValueStore {
         _write(accessor, encryptedData);
     }
 
-    function addOwner(bytes32 accessor, address account, bytes encryptedKey) public returns(uint8) {
+    function addOwner(bytes32 accessor, address account /*, bytes encryptedKey */) public returns(uint8) {
         require(isOwner(accessor, msg.sender));
-        return _addOwner(accessor, account, encryptedKey);
+        // return _addOwner(accessor, account, encryptedKey);
+        return _addOwner(accessor, account);
     }
 
-    function addAdmin(bytes32 accessor, address account, bytes encryptedKey) public returns(uint8) {
+    function addAdmin(bytes32 accessor, address account /*, bytes encryptedKey */) public returns(uint8) {
         require(isOwner(accessor, msg.sender));
-        return _addAdmin(accessor, account, encryptedKey);
+        // return _addAdmin(accessor, account, encryptedKey);
+        return _addAdmin(accessor, account);
     }
 
-    function grantWriteAccess(bytes32 accessor, address account, bytes encryptedKey) public returns(uint8) {
+    function grantWriteAccess(bytes32 accessor, address account /*, bytes encryptedKey */) public returns(uint8) {
         require(isAdmin(accessor, msg.sender));
-        return _grantWriteAccess(accessor, account, encryptedKey);
+        // return _grantWriteAccess(accessor, account, encryptedKey);
+        return _grantWriteAccess(accessor, account);
     }
 
-    function grantReadAccess(bytes32 accessor, address account, bytes encryptedKey) public returns(uint8) {
+    function grantReadAccess(bytes32 accessor, address account /*, bytes encryptedKey */) public returns(uint8) {
         require(isAdmin(accessor, msg.sender));
-        return _grantReadAccess(accessor, account, encryptedKey);
+        // return _grantReadAccess(accessor, account, encryptedKey);
+        return _grantReadAccess(accessor, account);
     }
 
     function issueEncryptedKey(bytes32 accessor, address account, bytes encryptedKey) public {
@@ -79,9 +100,9 @@ contract KeyValueStore {
 
     function revokeReadAccess(
         bytes32 accessor,
-        address account,
-        bytes encryptedData,
-        bytes encryptedKey
+        address account
+        // bytes encryptedData,
+        // bytes encryptedKey
     ) public returns(uint8) {
         require(msg.sender != account);
         require(canRead(accessor, account));
@@ -90,7 +111,8 @@ contract KeyValueStore {
         } else {
             require(isAdmin(accessor, msg.sender));
         }
-        return _revokeReadAccess(accessor, account, encryptedData, encryptedKey);
+        // return _revokeReadAccess(accessor, account, encryptedData, encryptedKey);
+        return _revokeReadAccess(accessor, account);
     }
 
     function setRegistration(string publicKey) public {
@@ -107,16 +129,16 @@ contract KeyValueStore {
         require(isOwner(accessor, msg.sender));
 
         delete data[accessor];
-        created[accessor] = false;
+        claimed[accessor] = false;
 
-        for (uint i = 0; i < members[accessor].length; i++) {
-            address member = members[accessor][i];
+        for (uint i = 0; i < members[accessor].accounts.length; i++) {
+            address member = members[accessor].accounts[i];
 
             delete keys[accessor][member];
-            delete owners[accessor][member];
-            delete admins[accessor][member];
-            delete writers[accessor][member];
-            delete readers[accessor][member];
+            // delete owners[accessor][member];
+            // delete admins[accessor][member];
+            // delete writers[accessor][member];
+            // delete readers[accessor][member];
         }
         delete members[accessor];
     }
@@ -124,19 +146,19 @@ contract KeyValueStore {
     // === GETTERS ===
     //
     function isOwner(bytes32 accessor, address account) public view returns(bool) {
-        return owners[accessor][account] > 0;
+        return members[accessor].owners[account] > 0;
     }
 
     function isAdmin(bytes32 accessor, address account) public view returns(bool) {
-        return admins[accessor][account] > 0;
+        return members[accessor].admins[account] > 0;
     }
 
     function canWrite(bytes32 accessor, address account) public view returns(bool) {
-        return writers[accessor][account] > 0;
+        return members[accessor].writers[account] > 0;
     }
 
     function canRead(bytes32 accessor, address account) public view returns(bool) {
-        return readers[accessor][account] > 0;
+        return members[accessor].readers[account] > 0;
     }
 
     function getKey(bytes32 accessor, address account) public view returns(bytes) {
@@ -144,48 +166,56 @@ contract KeyValueStore {
     }
 
     function getMembers(bytes32 accessor) public view returns(address[]) {
-        return members[accessor];
+        return members[accessor].accounts;
     }
 
     // === PRIVATE SETTERS ===
     //
     function _create(address account, bytes32 accessor, bytes encryptedData, bytes encryptedKey) private {
-        created[accessor] = true;
+        _claim(account, accessor);
+        _issueEncryptedKey(accessor, account, encryptedKey);
         _write(accessor, encryptedData);
-        _addOwner(accessor, account, encryptedKey);
+    }
+
+    function _claim(address account, bytes32 accessor) private {
+        claimed[accessor] = true;
+        _addOwner(accessor, account);
     }
 
     function _write(bytes32 accessor, bytes encryptedData) private {
         data[accessor] = encryptedData;
     }
 
-    function _addOwner(bytes32 accessor, address account, bytes encryptedKey) private returns(uint8) {
+    function _addOwner(bytes32 accessor, address account /*, bytes encryptedKey */) private returns(uint8) {
         if (isOwner(accessor, account)) {
-            return owners[accessor][account];
+            return members[accessor].owners[account];
         }
-        return owners[accessor][account] = _addAdmin(accessor, account, encryptedKey);
+        // return members[accessor].owners[account] = _addAdmin(accessor, account, encryptedKey);
+        return members[accessor].owners[account] = _addAdmin(accessor, account);
     }
 
-    function _addAdmin(bytes32 accessor, address account, bytes encryptedKey) private returns(uint8) {
+    function _addAdmin(bytes32 accessor, address account /*, bytes encryptedKey */) private returns(uint8) {
         if (isAdmin(accessor, account)) {
-            return admins[accessor][account];
+            return members[accessor].admins[account];
         }
-        return admins[accessor][account] = _grantWriteAccess(accessor, account, encryptedKey);
+        // return members[accessor].admins[account] = _grantWriteAccess(accessor, account, encryptedKey);
+        return members[accessor].admins[account] = _grantWriteAccess(accessor, account);
     }
 
-    function _grantWriteAccess(bytes32 accessor, address account, bytes encryptedKey) private returns(uint8) {
+    function _grantWriteAccess(bytes32 accessor, address account /*, bytes encryptedKey */) private returns(uint8) {
         if (canWrite(accessor, account)) {
-            return writers[accessor][account];
+            return members[accessor].writers[account];
         }
-        return writers[accessor][account] = _grantReadAccess(accessor, account, encryptedKey);
+        // return members[accessor].writers[account] = _grantReadAccess(accessor, account, encryptedKey);
+        return members[accessor].writers[account] = _grantReadAccess(accessor, account);
     }
 
-    function _grantReadAccess(bytes32 accessor, address account, bytes encryptedKey) private returns(uint8) {
+    function _grantReadAccess(bytes32 accessor, address account /*, bytes encryptedKey */) private returns(uint8) {
         if (canRead(accessor, account)) {
-            return readers[accessor][account];
+            return members[accessor].readers[account];
         }
-        _issueEncryptedKey(accessor, account, encryptedKey);
-        return readers[accessor][account] = _addMember(accessor, account);
+        // _issueEncryptedKey(accessor, account, encryptedKey);
+        return members[accessor].readers[account] = _addMember(accessor, account);
     }
 
     function _issueEncryptedKey(bytes32 accessor, address account, bytes encryptedKey) private {
@@ -193,77 +223,86 @@ contract KeyValueStore {
     }
 
     function _removeOwner(bytes32 accessor, address account) private returns(uint8) {
-        uint8 id = owners[accessor][account];
+        uint8 id = members[accessor].owners[account];
         if (id < 1) {
             return id;
         }
-        owners[accessor][account] = 0;
+        delete members[accessor].owners[account];
         return id;
     }
 
     function _removeAdmin(bytes32 accessor, address account) private returns(uint8) {
-        uint8 id = admins[accessor][account];
+        uint8 id = members[accessor].admins[account];
         if (id < 1) {
             return id;
         }
-        admins[accessor][account] = 0;
-        return _removeOwner(accessor, account);
+        delete members[accessor].admins[account];
+        _removeOwner(accessor, account);
+        return id;
     }
 
     function _revokeWriteAccess(bytes32 accessor, address account) private returns(uint8) {
-        uint8 id = writers[accessor][account];
+        uint8 id = members[accessor].writers[account];
         if (id < 1) {
             return id;
         }
-        writers[accessor][account] = 0;
-        return _removeAdmin(accessor, account);
+        delete members[accessor].writers[account];
+        _removeAdmin(accessor, account);
+        return id;
     }
 
     function _revokeReadAccess(
         bytes32 accessor,
-        address account,
-        bytes encryptedData,
-        bytes encryptedKey
+        address account
+        // bytes encryptedData,
+        // bytes encryptedKey
     ) private returns(uint8) {
-        _write(accessor, encryptedData);
-        _issueEncryptedKey(accessor, msg.sender, encryptedKey);
-        _removeMember(accessor, account);
-        readers[accessor][account] = 0;
-        return _revokeWriteAccess(accessor, account);
+        // _write(accessor, encryptedData);
+        // _issueEncryptedKey(accessor, msg.sender, encryptedKey);
+        uint8 id = _removeMember(accessor, account);
+        delete members[accessor].readers[account];
+        _revokeWriteAccess(accessor, account);
+        return id;
     }
 
     function _addMember(bytes32 accessor, address account) private returns(uint8) {
-        return uint8(members[accessor].push(account));
+        return uint8(members[accessor].accounts.push(account));
     }
 
     function _removeMember(bytes32 accessor, address account) private returns(uint8) {
-        uint8 id = readers[accessor][account];
         uint8 index = id - 1;
-        if (index >= members[accessor].length) return;
+        if (index >= members[accessor].accounts.length) return 0;
 
-        delete members[accessor][index];
+        MemberList storage m = members[accessor];
+        uint8 id = m.readers[account];
 
-        address lastAccount = members[accessor][members[accessor].length - 1];
-        members[accessor][index] = lastAccount;
-        _changeId(accessor, account, id);
+        delete m.accounts[index];
 
-        members[accessor].length--;
+        if (index > 0) {
+            address lastAccount = m.accounts[m.accounts.length - 1];
+            m.accounts[index] = lastAccount;
+            _changeId(accessor, account, id);
+        }
+
+        m.accounts.length--;
 
         return id;
     }
 
     function _changeId(bytes32 accessor, address account, uint8 id) private {
+        MemberList storage m = members[accessor];
+
         if (isOwner(accessor, account)) {
-            owners[accessor][account] = id;
+            m.owners[account] = id;
         }
         if (isAdmin(accessor, account)) {
-            admins[accessor][account] = id;
+            m.admins[account] = id;
         }
         if (canWrite(accessor, account)) {
-            writers[accessor][account] = id;
+            m.writers[account] = id;
         }
         if (canRead(accessor, account)) {
-            readers[accessor][account] = id;
+            m.readers[account] = id;
         }
     }
 }
