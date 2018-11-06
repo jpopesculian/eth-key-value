@@ -3,7 +3,7 @@ const path = require('path')
 
 module.exports = {
   entry: {
-    main: ['./contracts/KeyValueStore.sol']
+    main: [path.join(__dirname, 'contracts', 'KeyValueStore.sol')]
   },
   module: {
     rules: [
@@ -17,10 +17,10 @@ module.exports = {
             loader: 'truffle-solidity-loader',
             options: {
               network: 'development',
-              migrations_directory: path.resolve(__dirname, './migrations'),
+              migrations_directory: path.resolve(__dirname, 'migrations'),
               contracts_build_directory: path.resolve(
                 __dirname,
-                './build/contracts'
+                'build/contracts'
               )
             }
           }
