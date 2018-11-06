@@ -90,7 +90,7 @@ contract KeyValueStore {
     function revokeWriteAccess(bytes32 accessor, address account) public returns(uint8) {
         require(msg.sender != account);
         require(canWrite(accessor, account));
-        if (isAdmin(accessor, account) || isOwner(accessor, account)) {
+        if (isAdmin(accessor, account)) {
             require(isOwner(accessor, msg.sender));
         } else {
             require(isAdmin(accessor, msg.sender));
@@ -106,7 +106,7 @@ contract KeyValueStore {
     ) public returns(uint8) {
         require(msg.sender != account);
         require(canRead(accessor, account));
-        if (isAdmin(accessor, account) || isOwner(accessor, account)) {
+        if (isAdmin(accessor, account)) {
             require(isOwner(accessor, msg.sender));
         } else {
             require(isAdmin(accessor, msg.sender));
