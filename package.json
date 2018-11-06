@@ -8,10 +8,10 @@
     "build": "webpack --config webpack.config.js --mode production"
   },
   "devDependencies": {
-    "eslint-config-prettier": "^3.0.1",
     "json-loader": "^0.5.7",
     "truffle-solidity-loader": "^0.1.0",
-    "webpack": "^4.19.0"
+    "webpack": "^4.25.0",
+    "webpack-cli": "^3.1.0"
   },
   "dependencies": {}
 }
