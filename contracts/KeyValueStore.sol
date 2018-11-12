@@ -7,10 +7,19 @@ contract KeyValueStore {
     mapping (bytes32 => bytes) public data;
     mapping (bytes32 => bool) public claimed;
 
-    mapping (bytes32 => mapping (address => bytes)) public keys;
+    struct Key {
+        bytes value;
+        uint16 version;
+    }
 
-    mapping (address => string) public registration;
-    mapping (address => bool) public registered;
+    mapping (bytes32 => mapping (address => Key)) public keys;
+
+    struct User {
+        string publicKey;
+        bool registered;
+    }
+
+    mapping (address => User) public users;
 
     struct MemberList {
         mapping (address => uint8) owners;
@@ -67,10 +76,10 @@ contract KeyValueStore {
         return _grantReadAccess(accessor, account);
     }
 
-    function issueEncryptedKey(bytes32 accessor, address account, bytes encryptedKey) public {
+    function issueEncryptedKey(bytes32 accessor, address account, bytes encryptedKey, uint16 version) public {
         require(isAdmin(accessor, msg.sender));
         require(canRead(accessor, account));
-        return _issueEncryptedKey(accessor, account, encryptedKey);
+        return _issueEncryptedKey(accessor, account, encryptedKey, version);
     }
 
     function removeOwner(bytes32 accessor, address account) public returns(uint8) {
@@ -116,13 +125,12 @@ contract KeyValueStore {
     }
 
     function setRegistration(string publicKey) public {
-        registration[msg.sender] = publicKey;
-        registered[msg.sender] = true;
+        users[msg.sender].publicKey = publicKey;
+        users[msg.sender].registered = true;
     }
 
     function unRegister() public {
-        delete registration[msg.sender];
-        registered[msg.sender] = false;
+        delete users[msg.sender];
     }
 
     function remove(bytes32 accessor) public {
@@ -162,7 +170,7 @@ contract KeyValueStore {
     }
 
     function getKey(bytes32 accessor, address account) public view returns(bytes) {
-        return keys[accessor][account];
+        return keys[accessor][account].value;
     }
 
     function getMembers(bytes32 accessor) public view returns(address[]) {
@@ -173,7 +181,7 @@ contract KeyValueStore {
     //
     function _create(address account, bytes32 accessor, bytes encryptedData, bytes encryptedKey) private {
         _claim(account, accessor);
-        _issueEncryptedKey(accessor, account, encryptedKey);
+        _issueEncryptedKey(accessor, account, encryptedKey, 1);
         _write(accessor, encryptedData);
     }
 
@@ -218,8 +226,11 @@ contract KeyValueStore {
         return members[accessor].readers[account] = _addMember(accessor, account);
     }
 
-    function _issueEncryptedKey(bytes32 accessor, address account, bytes encryptedKey) private {
-        keys[accessor][account] = encryptedKey;
+    function _issueEncryptedKey(bytes32 accessor, address account, bytes encryptedKey, uint16 version) private {
+        keys[accessor][account].value = encryptedKey;
+        if (version > 0) {
+            keys[accessor][account].version = version;
+        }
     }
 
     function _removeOwner(bytes32 accessor, address account) private returns(uint8) {
@@ -259,7 +270,11 @@ contract KeyValueStore {
     ) private returns(uint8) {
         // _write(accessor, encryptedData);
         // _issueEncryptedKey(accessor, msg.sender, encryptedKey);
-        uint8 id = _removeMember(accessor, account);
+        uint8 id = members[accessor].readers[account];
+        if (id < 1) {
+            return id;
+        }
+        _removeMember(accessor, account);
         delete members[accessor].readers[account];
         _revokeWriteAccess(accessor, account);
         return id;
@@ -270,11 +285,11 @@ contract KeyValueStore {
     }
 
     function _removeMember(bytes32 accessor, address account) private returns(uint8) {
-        uint8 index = id - 1;
-        if (index >= members[accessor].accounts.length) return 0;
-
         MemberList storage m = members[accessor];
         uint8 id = m.readers[account];
+        uint8 index = id - 1;
+
+        if (index >= m.accounts.length) return id;
 
         delete m.accounts[index];
 
